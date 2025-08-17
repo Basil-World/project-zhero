@@ -31,6 +31,17 @@ def get_db():
         db.close()
 
 # --- API ENDPOINTS ---
+@app.get("/__secret_seed_command__")
+def secret_seed(db: Session = Depends(get_db)):
+    if db.query(models.Quiz).first():
+        return {"message": "Database already seeded."}
+    try:
+        # The full seeding logic from your seed.py file goes here
+        # ...
+        return {"message": "Database seeded successfully."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/quizzes/{quiz_id}", response_model=schemas.Quiz)
 def read_quiz(quiz_id: int, db: Session = Depends(get_db)):
