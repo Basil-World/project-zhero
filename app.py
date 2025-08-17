@@ -1,4 +1,4 @@
-# app.py (Final Version - No Rerun Warning)
+# app.py
 
 import streamlit as st
 import requests
@@ -12,7 +12,6 @@ st.title("Project Zhero 🚀")
 BACKEND_URL = st.secrets.get("BACKEND_URL", "http://127.0.0.1:8000")
 
 # --- Initialize Session State ---
-# This structure remains the same
 if 'stage' not in st.session_state:
     st.session_state.stage = 'setup'
 if 'user_age' not in st.session_state:
@@ -35,7 +34,6 @@ if 'career_recommendations' not in st.session_state:
 # --- Functions (Callbacks) ---
 
 def start_quiz():
-    # This callback prepares for the quiz
     try:
         response = requests.get(f"{BACKEND_URL}/quizzes/1")
         response.raise_for_status()
@@ -45,21 +43,18 @@ def start_quiz():
         st.session_state.conversation_history = []
         st.session_state.current_question_obj = st.session_state.static_quiz_data[0]
     except requests.exceptions.RequestException as e:
-        st.error(f"Error connecting: {e}")
+        st.error(f"Error connecting to the backend: {e}. Please ensure the backend is running and accessible.")
+        st.session_state.stage = 'error'
 
 def handle_answer(question_text, answer_text):
-    # This callback processes an answer and decides what to do next
     st.session_state.conversation_history.append({"question": question_text, "answer": answer_text})
     
-    # Is the static quiz over?
-    if (st.session_state.current_q_index + 1) < len(st.session_state.static_quiz_data):
+    current_question_number = st.session_state.current_q_index + 1
+    
+    if current_question_number < len(st.session_state.static_quiz_data):
         st.session_state.current_q_index += 1
         st.session_state.current_question_obj = st.session_state.static_quiz_data[st.session_state.current_q_index]
-    # Is the whole quiz over?
-    elif (st.session_state.current_q_index + 1) >= st.session_state.total_questions:
-        st.session_state.stage = 'final_analysis'
-    # Otherwise, it's time to get a new AI question
-    else:
+    elif current_question_number < st.session_state.total_questions:
         with st.spinner("Your personal AI counselor is thinking..."):
             try:
                 request_body = {
@@ -71,13 +66,13 @@ def handle_answer(question_text, answer_text):
                 response.raise_for_status()
                 st.session_state.current_question_obj = response.json()
                 st.session_state.current_q_index += 1
-                st.session_state.stage = 'quiz'
             except requests.exceptions.RequestException as e:
                 st.error(f"Error generating AI question: {e}")
                 st.session_state.stage = 'error'
+    else:
+        st.session_state.stage = 'final_analysis'
 
 def run_final_analysis_and_get_recs():
-    # This callback does the final, heavy lifting
     with st.spinner("Analyzing your conversation and generating recommendations..."):
         try:
             request_body = {
@@ -93,7 +88,7 @@ def run_final_analysis_and_get_recs():
             st.error(f"Error getting AI recommendations: {e}")
             st.session_state.stage = 'final_analysis'
 
-# --- UI Rendering (The main body of the script) ---
+# --- UI Rendering ---
 
 if st.session_state.stage == 'setup':
     st.subheader("First, let's personalize your session.")
@@ -134,10 +129,10 @@ elif st.session_state.stage == 'show_recommendations':
     if st.button("Start Over"):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
-        st.rerun() # This is one of the few places where rerun is okay, to reset the app.
+        st.rerun()
 
 elif st.session_state.stage == 'error':
-    st.error("Something went wrong with the AI. Please try starting over.")
+    st.error("Something went wrong with the connection to our AI. Please ensure the backend is running.")
     if st.button("Start Over"):
         for key in list(st.session_state.keys()):
             del st.session_state[key]

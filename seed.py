@@ -1,4 +1,4 @@
-# seed.py (New "Universal Interests" Version)
+# seed.py
 
 from database import SessionLocal, engine
 from models import Quiz, Question, Choice, InterestTag, Career, Base, choice_interest_tag_association, career_interest_tag_association
@@ -8,8 +8,6 @@ def seed_database():
     db = SessionLocal()
     try:
         print("Starting to seed the database...")
-
-        # Clear old data
         db.execute(choice_interest_tag_association.delete())
         db.execute(career_interest_tag_association.delete())
         db.query(Career).delete()
@@ -19,27 +17,23 @@ def seed_database():
         db.query(Quiz).delete()
         db.commit()
 
-        # --- NEW, BROADER INTEREST TAGS ---
         print("Creating universal interest tags...")
-        tag_analytical = InterestTag(name="Analytical & Investigative") # Science, Research, Data
-        tag_creative = InterestTag(name="Artistic & Creative") # Arts, Design, Writing
-        tag_social = InterestTag(name="Social & Helping") # Healthcare, Teaching, Social Work
-        tag_enterprising = InterestTag(name="Enterprising & Leading") # Business, Law, Administration
-        tag_conventional = InterestTag(name="Conventional & Organizing") # Finance, Admin, Logistics
-        tag_realistic = InterestTag(name="Realistic & Hands-On") # Engineering, Sports, Trades
+        tag_analytical = InterestTag(name="Analytical & Investigative")
+        tag_creative = InterestTag(name="Artistic & Creative")
+        tag_social = InterestTag(name="Social & Helping")
+        tag_enterprising = InterestTag(name="Enterprising & Leading")
+        tag_conventional = InterestTag(name="Conventional & Organizing")
+        tag_realistic = InterestTag(name="Realistic & Hands-On")
         db.add_all([tag_analytical, tag_creative, tag_social, tag_enterprising, tag_conventional, tag_realistic])
         db.commit()
 
-        # --- NEW, MORE GENERIC INITIAL QUIZ ---
         print("Creating universal quiz...")
         quiz1 = Quiz(title="Discover Your Core Interests", description="A few questions to understand what drives you.")
         db.add(quiz1)
         db.commit()
 
-        # Question 1: How do you prefer to solve problems?
         q1 = Question(text="When faced with a complex problem, what is your first instinct?", quiz_id=quiz1.id)
-        db.add(q1)
-        db.commit()
+        db.add(q1); db.commit()
         db.add_all([
             Choice(text="Analyze data and research to find a logical solution.", question_id=q1.id, interest_tags=[tag_analytical]),
             Choice(text="Brainstorm unconventional ideas and create something new.", question_id=q1.id, interest_tags=[tag_creative]),
@@ -47,10 +41,8 @@ def seed_database():
             Choice(text="Build a physical prototype or take direct, hands-on action.", question_id=q1.id, interest_tags=[tag_realistic]),
         ])
 
-        # Question 2: What kind of work environment energizes you?
         q2 = Question(text="Which of these work environments sounds most appealing?", quiz_id=quiz1.id)
-        db.add(q2)
-        db.commit()
+        db.add(q2); db.commit()
         db.add_all([
             Choice(text="A quiet library or lab, focused on deep thinking and discovery.", question_id=q2.id, interest_tags=[tag_analytical]),
             Choice(text="A bustling studio or workshop, surrounded by creativity and expression.", question_id=q2.id, interest_tags=[tag_creative]),
@@ -58,10 +50,8 @@ def seed_database():
             Choice(text="A well-structured office, focused on order, accuracy, and process.", question_id=q2.id, interest_tags=[tag_conventional]),
         ])
         
-        # Question 3: What gives you the greatest sense of accomplishment?
         q3 = Question(text="What brings you the greatest sense of accomplishment?", quiz_id=quiz1.id)
-        db.add(q3)
-        db.commit()
+        db.add(q3); db.commit()
         db.add_all([
             Choice(text="Solving a difficult puzzle or discovering a new piece of knowledge.", question_id=q3.id, interest_tags=[tag_analytical]),
             Choice(text="Making a positive impact on someone's life or community.", question_id=q3.id, interest_tags=[tag_social]),
@@ -70,7 +60,6 @@ def seed_database():
         ])
         db.commit()
 
-        # --- NEW, MORE DIVERSE CAREERS ---
         print("Creating diverse careers...")
         db.add_all([
             Career(title="Doctor / Nurse", description="...", interest_tags=[tag_social, tag_analytical]),

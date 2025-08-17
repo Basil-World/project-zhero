@@ -9,3 +9,6 @@ __pycache__/
 
 # Local database file
 quiz.db
+
+# Ignore local streamlit secrets
+.streamlit/secrets.toml
