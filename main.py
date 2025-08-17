@@ -17,7 +17,7 @@ from database import SessionLocal, engine
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-pro-latest')
+model = genai.GenerativeModel('gemma-3n-e4b-it')
 
 # --- DATABASE AND APP SETUP ---
 models.Base.metadata.create_all(bind=engine)
