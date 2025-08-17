@@ -9,7 +9,7 @@ st.set_page_config(page_title="Project Zhero", page_icon="🚀", layout="centere
 st.title("Project Zhero 🚀")
 
 # --- Backend API URL ---
-BACKEND_URL = "http://127.0.0.1:8000"
+BACKEND_URL = st.secrets.get("BACKEND_URL", "http://127.0.0.1:8000")
 
 # --- Initialize Session State ---
 # This structure remains the same
