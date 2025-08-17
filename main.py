@@ -1,4 +1,4 @@
-# main.py (Final "Hobbies-Aware" Version)
+# main.py (Final Version with Seeding Endpoint)
 
 import os
 from dotenv import load_dotenv
@@ -18,10 +18,9 @@ from database import SessionLocal, engine
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=GOOGLE_API_KEY)
-# Use the model name confirmed to work with your key
 model = genai.GenerativeModel('gemini-1.5-flash-latest')
-# --- END AI SETUP ---
 
+# --- DATABASE AND APP SETUP ---
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
@@ -32,142 +31,113 @@ def get_db():
     finally:
         db.close()
 
-# --- Schema Definition within main.py ---
-# For simplicity in providing the final code, schemas are defined here.
-# In a larger project, they would remain in schemas.py
-class InterestTag(schemas.BaseModel):
-    name: str
-    class Config:
-        from_attributes = True
+# --- THE SECRET SEEDING ENDPOINT ---
+@app.get("/__secret_seed_command__")
+def secret_seed(db: Session = Depends(get_db)):
+    """This endpoint runs the seeding logic. It should only be run once."""
+    if db.query(models.Quiz).first():
+        return {"message": "Database already seeded."}
+    
+    try:
+        # ====================================================================
+        # === PASTE THE CODE YOU JUST COPIED (FROM seed.py) RIGHT HERE ===
+        # ====================================================================
 
-class Choice(schemas.BaseModel):
-    id: int
-    text: str
-    interest_tags: List[InterestTag] = []
-    class Config:
-        from_attributes = True
+        # It starts with: print("Starting to seed the database...")
+        # Make sure to change all model names to have "models." in front of them
+        # e.g., Quiz becomes models.Quiz, Career becomes models.Career, etc.
+
+        # I will do this for you to make it easy:
+
+        print("Starting to seed the database...")
+
+        # Clear old data
+        db.execute(models.choice_interest_tag_association.delete())
+        db.execute(models.career_interest_tag_association.delete())
+        db.query(models.Career).delete()
+        db.query(models.InterestTag).delete()
+        db.query(models.Choice).delete()
+        db.query(models.Question).delete()
+        db.query(models.Quiz).delete()
+        db.commit()
+
+        # --- NEW, BROADER INTEREST TAGS ---
+        print("Creating universal interest tags...")
+        tag_analytical = models.InterestTag(name="Analytical & Investigative")
+        tag_creative = models.InterestTag(name="Artistic & Creative")
+        tag_social = models.InterestTag(name="Social & Helping")
+        tag_enterprising = models.InterestTag(name="Enterprising & Leading")
+        tag_conventional = models.InterestTag(name="Conventional & Organizing")
+        tag_realistic = models.InterestTag(name="Realistic & Hands-On")
+        db.add_all([tag_analytical, tag_creative, tag_social, tag_enterprising, tag_conventional, tag_realistic])
+        db.commit()
+
+        # --- NEW, MORE GENERIC INITIAL QUIZ ---
+        print("Creating universal quiz...")
+        quiz1 = models.Quiz(title="Discover Your Core Interests", description="A few questions to understand what drives you.")
+        db.add(quiz1)
+        db.commit()
+
+        # Question 1
+        q1 = models.Question(text="When faced with a complex problem, what is your first instinct?", quiz_id=quiz1.id)
+        db.add(q1)
+        db.commit()
+        db.add_all([
+            models.Choice(text="Analyze data and research to find a logical solution.", question_id=q1.id, interest_tags=[tag_analytical]),
+            models.Choice(text="Brainstorm unconventional ideas and create something new.", question_id=q1.id, interest_tags=[tag_creative]),
+            models.Choice(text="Organize a team and delegate tasks to get it done efficiently.", question_id=q1.id, interest_tags=[tag_enterprising]),
+            models.Choice(text="Build a physical prototype or take direct, hands-on action.", question_id=q1.id, interest_tags=[tag_realistic]),
+        ])
+
+        # Question 2
+        q2 = models.Question(text="Which of these work environments sounds most appealing?", quiz_id=quiz1.id)
+        db.add(q2)
+        db.commit()
+        db.add_all([
+            models.Choice(text="A quiet library or lab, focused on deep thinking and discovery.", question_id=q2.id, interest_tags=[tag_analytical]),
+            models.Choice(text="A bustling studio or workshop, surrounded by creativity and expression.", question_id=q2.id, interest_tags=[tag_creative]),
+            models.Choice(text="A collaborative office or field site, helping and interacting with people.", question_id=q2.id, interest_tags=[tag_social]),
+            models.Choice(text="A well-structured office, focused on order, accuracy, and process.", question_id=q2.id, interest_tags=[tag_conventional]),
+        ])
         
-class Question(schemas.BaseModel):
-    id: int
-    text: str
-    choices: List[Choice] = []
-    class Config:
-        from_attributes = True
+        # Question 3
+        q3 = models.Question(text="What brings you the greatest sense of accomplishment?", quiz_id=quiz1.id)
+        db.add(q3)
+        db.commit()
+        db.add_all([
+            models.Choice(text="Solving a difficult puzzle or discovering a new piece of knowledge.", question_id=q3.id, interest_tags=[tag_analytical]),
+            models.Choice(text="Making a positive impact on someone's life or community.", question_id=q3.id, interest_tags=[tag_social]),
+            models.Choice(text="Leading a team to victory or successfully launching a new venture.", question_id=q3.id, interest_tags=[tag_enterprising]),
+            models.Choice(text="Creating a detailed plan and executing it flawlessly.", question_id=q3.id, interest_tags=[tag_conventional]),
+        ])
+        db.commit()
 
-class Quiz(schemas.BaseModel):
-    id: int
-    title: str
-    description: str
-    questions: List[Question] = []
-    class Config:
-        from_attributes = True
+        # --- NEW, MORE DIVERSE CAREERS ---
+        print("Creating diverse careers...")
+        db.add_all([
+            models.Career(title="Doctor / Nurse", description="...", interest_tags=[tag_social, tag_analytical]),
+            models.Career(title="Mechanical Engineer", description="...", interest_tags=[tag_realistic, tag_analytical]),
+            models.Career(title="Lawyer", description="...", interest_tags=[tag_enterprising, tag_analytical]),
+            models.Career(title="Artist / Illustrator", description="...", interest_tags=[tag_creative]),
+            models.Career(title="Marine Biologist", description="...", interest_tags=[tag_analytical, tag_realistic]),
+            models.Career(title="Accountant", description="...", interest_tags=[tag_conventional, tag_analytical]),
+            models.Career(title="Professional Athlete / Coach", description="...", interest_tags=[tag_realistic]),
+            models.Career(title="Civil Servant / Administrator", description="...", interest_tags=[tag_conventional, tag_enterprising]),
+            models.Career(title="Entrepreneur", description="...", interest_tags=[tag_enterprising, tag_creative]),
+        ])
+        db.commit()
 
-class Career(schemas.BaseModel):
-    id: int
-    title: str
-    description: str
-    interest_tags: List[InterestTag] = []
-    class Config:
-        from_attributes = True
+        print("Database seeded successfully!")
 
-class ConversationalInput(schemas.BaseModel):
-    conversation_history: List[dict]
-    user_age: str
-    hobbies: List[str]
+        # ====================================================================
+        # === END OF PASTED CODE ===
+        # ====================================================================
 
-# --- API Endpoints ---
-
-@app.get("/quizzes/{quiz_id}", response_model=Quiz)
-def read_quiz(quiz_id: int, db: Session = Depends(get_db)):
-    quiz = db.query(models.Quiz).options(
-        joinedload(models.Quiz.questions)
-        .joinedload(models.Question.choices)
-        .joinedload(models.Choice.interest_tags)
-    ).filter(models.Quiz.id == quiz_id).first()
-    if quiz is None:
-        raise HTTPException(status_code=404, detail="Quiz not found")
-    return quiz
-
-@app.post("/generate-conversational-question")
-def generate_conversational_question(convo_input: ConversationalInput):
-    history = convo_input.conversation_history
-    user_age = convo_input.user_age
-    hobbies = ", ".join(convo_input.hobbies)
-
-    history_string = "\n".join([f"Q: {turn['question']}\nA: {turn['answer']}" for turn in history])
-    
-    prompt = f"""
-    You are "Zhero," an AI career counselor creating a personalized MCQ quiz for a '{user_age}' whose hobbies include '{hobbies}'.
-    Based on the conversation history, generate the VERY NEXT question.
-
-    --- CONVERSATION HISTORY ---
-    {history_string}
-    --- END OF HISTORY ---
-
-    ## RULES:
-    1.  **ANALYZE & DEEPEN:** Analyze the history to identify emerging interests. Generate a new question that probes deeper into ONE of these interests.
-    2.  **CREATE A SCENARIO:** The question must be a specific, age-appropriate scenario.
-    3.  **GENERATE 4 OPTIONS:** Create four distinct, plausible answer options.
-    4.  **TAG EACH OPTION:** Each option MUST be tagged with one of: ["Analytical & Investigative", "Artistic & Creative", "Social & Helping", "Enterprising & Leading", "Conventional & Organizing", "Realistic & Hands-On"].
-    5.  **OUTPUT FORMAT:** Respond with a valid JSON object with keys "question" (string) and "choices" (list of dicts). Each choice dict must have keys "text" and "tag".
-
-    ## EXAMPLE OUTPUT:
-    {{
-      "question": "A community project to build a new park is announced. What role excites you?",
-      "choices": [
-        {{"text": "Researching the best local plants...", "tag": "Analytical & Investigative"}},
-        {{"text": "Designing a beautiful sculpture...", "tag": "Artistic & Creative"}},
-        {{"text": "Organizing volunteer schedules...", "tag": "Social & Helping"}},
-        {{"text": "Building the benches and planting trees...", "tag": "Realistic & Hands-On"}}
-      ]
-    }}
-    
-    Generate the JSON for the next question now.
-    """
-    try:
-        response = model.generate_content(prompt)
-        cleaned_response = response.text.strip().replace("```json", "").replace("```", "").strip()
-        return json.loads(cleaned_response)
+        return {"message": "Database seeded successfully."}
     except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"An exception occurred: {repr(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/generate-ai-recommendations")
-def generate_ai_recommendations(convo_input: ConversationalInput):
-    history = convo_input.conversation_history
-    user_age = convo_input.user_age
-    hobbies = ", ".join(convo_input.hobbies)
-
-    history_string = "\n".join([f"Q: {turn['question']}\nA: {turn['answer']}" for turn in history])
-
-    prompt = f"""
-    You are "Zhero," a world-class AI career analyst reviewing an interview with a user who is '{user_age}' and has hobbies like '{hobbies}'.
-
-    --- FULL INTERVIEW TRANSCRIPT ---
-    {history_string}
-    --- END TRANSCRIPT ---
-
-    Your task is to perform a deep analysis of this transcript and generate 3 to 5 personalized career recommendations.
-
-    ## RULES:
-    1.  **HOLISTIC ANALYSIS:** Analyze the conversation to identify core interests, skills, and personality traits.
-    2.  **DYNAMIC RECOMMENDATIONS:** Suggest 3 to 5 specific career paths or fields of study relevant to the user's unique responses and age.
-    3.  **PERSONALIZED REASONING:** For each career, provide a "Why it's a good fit for you:" section that directly references the user's answers.
-    4.  **OUTPUT FORMAT:** Respond with a valid JSON object with a single key "recommendations", which is a list of dicts. Each dict must have keys "career" and "reason".
-
-    ## EXAMPLE OUTPUT:
-    {{
-      "recommendations": [
-        {{"career": "Urban Planner", "reason": "Why it's a good fit for you: Your detailed answer about designing a community park showed a passion for both creative design and analytical thinking..."}}
-      ]
-    }}
-
-    Generate the JSON analysis and recommendations now.
-    """
-    try:
-        response = model.generate_content(prompt)
-        cleaned_response = response.text.strip().replace("```json", "").replace("```", "").strip()
-        return json.loads(cleaned_response)
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"An exception occurred: {repr(e)}")
+# --- ALL YOUR OTHER API ENDPOINTS GO HERE ---
+# (read_quiz, generate_conversational_question, generate_ai_recommendations)
+# These should already be in your file.
